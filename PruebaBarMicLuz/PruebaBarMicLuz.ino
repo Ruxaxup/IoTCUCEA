@@ -6,11 +6,20 @@ Adafruit_MPL115A2 barometro; //Barometro
 TSL2561 luminosidad(TSL2561_ADDR_FLOAT); //Luminosidad
 const int sampleWindow = 50; //50 ms = 20 Hz
 unsigned int sample;
+int ledMic = 7;
+int ledLuz = 12;
+int ledBar = 13;
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
   barometro.begin();
+  pinMode(ledMic, OUTPUT);
+  digitalWrite(ledMic,LOW);
+  pinMode(ledLuz, OUTPUT);
+  digitalWrite(ledLuz,LOW);
+  pinMode(ledBar, OUTPUT);    
+  digitalWrite(ledBar,LOW);
 }
 
 void loop() {
@@ -19,11 +28,12 @@ void loop() {
   //Variables para luminosidad
   uint32_t luminosidadCompleta;
   //Variables microfono
-  unsigned long startMillis = millis();
+
   unsigned int peekToPeek = 0;
   unsigned int signalMax = 0, signalMin = 1024;
   
   //Lectura de presion y temperatura
+  digitalWrite(ledBar, HIGH);
   presion = barometro.getPressure();
   temperatura = barometro.getTemperature();
   //Mostramos datos leidos
@@ -34,7 +44,10 @@ void loop() {
   Serial.print(temperatura, 1);
   Serial.println(" *C");
   Serial.println("/*************************/");  
+  delay(1000);
+  digitalWrite(ledBar, LOW);
   //Lectura de luz
+  digitalWrite(ledLuz,HIGH);
   luminosidadCompleta = luminosidad.getFullLuminosity();
   luminosidadCompleta = luminosidadCompleta & 0xFFFF;
   //Mostramos la luminosidad completa
@@ -42,8 +55,12 @@ void loop() {
   Serial.print(luminosidadCompleta);
   Serial.println(" lumenes");
   Serial.println("/*************************/");
-  
+  delay(1000);
+  digitalWrite(ledLuz,LOW);
+
   //Lectura de ruido
+  unsigned long startMillis = millis();
+  digitalWrite(ledMic, HIGH);
   while(millis() - startMillis < sampleWindow){
     sample = analogRead(0);
     if(sample < 1024){
@@ -58,11 +75,14 @@ void loop() {
   double volts = (peekToPeek * 3.3) / 1024;
   
   //Mostramos el ruido o lo que sea
-  Serial.print(peekToPeek);
+  //Serial.print(peekToPeek);
   Serial.print("Ruido: ");
   Serial.print(volts);
   Serial.println(" V");
   Serial.println("/--------------------/");
-  delay(5000);
+  Serial.println("");
+  delay(1000);
+  digitalWrite(ledMic, LOW);
+
   
 }
