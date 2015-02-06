@@ -12,7 +12,7 @@ int ledLuz = 12;
 int ledBar = 13;
 
 /***** Ethernet ******/
-#define thingName = "Test_Galileo_1"
+#define thingName "Test_Galileo_1"
 //MAC esta escrita en la etiqueta del puerto Ethernet
 byte mac[] = { 0x98, 0x4F, 0xEE, 0x00, 0xE5, 0x86 };
 EthernetClient client;
@@ -31,16 +31,16 @@ boolean initializeEthernet(){
 }
 
 /** Recopila y manda las lecturas a Dweet **/
-void sendDweet(float presion, float temperatura, float ruido
+void sendDweet(float presion, float temperatura, float ruido,
                uint32_t lumens)
 {
 
   if(client.connect(server,80)){
     //Estructura de los datos
     client.print("GET /dweet/for/");
-    client.print(thingNam);
-    cllient.print("?pressure=");
-    client.print(presion)
+    client.print(thingName);
+    client.print("?pressure=");
+    client.print(presion);
     client.print("&temp=");
     client.print(temperatura);
     client.print("&noise=");
@@ -141,6 +141,6 @@ void loop() {
   digitalWrite(ledMic, LOW);
   
   //Empujar los datos a Dweet
-  sendDweet(presion, temperatura, ruido, luminosidadCompleta);
+  sendDweet(presion, temperatura, volts, luminosidadCompleta);
   
 }
