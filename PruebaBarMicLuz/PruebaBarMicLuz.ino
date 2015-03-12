@@ -5,6 +5,7 @@
 #include <TimerOne.h>
 
 #define DEBUG 0
+//El valor hexadecimal es el tiempo de parpadeo
 #define LUZ 		0x01	//0000	0001
 #define PRESION 	0x02	//0000	0010
 #define TEMPERATURA     0x04	//0000	0100
