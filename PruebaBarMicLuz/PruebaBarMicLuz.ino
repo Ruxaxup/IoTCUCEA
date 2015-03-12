@@ -2,6 +2,8 @@
 #include <TSL2561.h> //Luminosidad
 #include <Adafruit_MPL115A2.h> //Barometro
 #include <Ethernet.h>
+#include <TimerOne.h>
+
 #define DEBUG 0
 #define LUZ 		0x01	//0000	0001
 #define PRESION 	0x02	//0000	0010
@@ -9,6 +11,8 @@
 #define RUIDO 		0x08	//0000	1000
 #define ETHERNET 	0x10	//0001  0000
 #define SERVER	 	0x20	//0010  0000
+
+#define MUESTREO        1000
 byte errorFlag = 0x0;
 
 Adafruit_MPL115A2 barometro; //Barometro
@@ -98,11 +102,12 @@ void sendDweet(float presion, float temperatura, double ruido,
     client.println("Connection: close");
     client.println();
     client.flush();  
-    
+      
     //Leemos la respuesta
     if(client.available()){
       char c = client.read();
       Serial.print(c);
+      client.flush();
     }
     client.stop();
       if(DEBUG == 1) Serial.println("Dweet sent");
@@ -164,6 +169,8 @@ float getNoise(){
     }
   } 
   peekToPeek = signalMax - signalMin;  
+  if(sample == 1)
+    return 0;
   //double ruido = (peekToPeek * 3.3) / 1024;
   double ruido = 20 * log10(sample / 2);
   return ruido;
@@ -178,9 +185,69 @@ void printToSerialNoise(double noise){
   Serial.println("");
 }
 
+void blinkError(byte flag){
+  int i;
+  for(i = 0; i < flag; i++){
+    digitalWrite(ledError, HIGH);
+    delay(200);
+    digitalWrite(ledError, LOW);
+    delay(200);
+  }
+}
+
+void timerIsr(){
+  digitalWrite(ledError, HIGH);
+  delay(2000);
+  digitalWrite(ledError, LOW);
+  if( (errorFlag&LUZ) == LUZ){
+    blinkError(LUZ);
+  }
+  
+  digitalWrite(ledError, HIGH);
+  delay(2000);
+  digitalWrite(ledError, LOW);
+  
+  if( (errorFlag&PRESION) == PRESION){
+    blinkError(PRESION);
+  }
+  
+  digitalWrite(ledError, HIGH);
+  delay(2000);
+  digitalWrite(ledError, LOW);
+  
+  if( (errorFlag&TEMPERATURA) == TEMPERATURA){
+    blinkError(TEMPERATURA);  
+  }
+  
+  digitalWrite(ledError, HIGH);
+  delay(2000);
+  digitalWrite(ledError, LOW);
+  
+  if( (errorFlag&RUIDO) == RUIDO){
+    blinkError(RUIDO);
+  }
+  
+  digitalWrite(ledError, HIGH);
+  delay(2000);
+  digitalWrite(ledError, LOW);  
+  
+  if( (errorFlag&ETHERNET) == ETHERNET){
+    blinkError(ETHERNET);
+  }
+  
+  digitalWrite(ledError, HIGH);
+  delay(2000);
+  digitalWrite(ledError, LOW);
+  
+  if( (errorFlag&SERVER) == SERVER){
+    blinkError(SERVER);
+  }
+}
 
 void setup() {
-  if(DEBUG == 1) Serial.begin(9600);
+
+  
+  if(DEBUG == 1) Serial.begin(9600);  
   //Ethernet initialization
   if(!initializeEthernet()){
     //No hacemos nada
@@ -203,6 +270,8 @@ void setup() {
   digitalWrite(ledBar,LOW);
   pinMode(ledError, OUTPUT);
   digitalWrite(ledError, LOW);
+  //Timer1.initialize(1000000);
+  //Timer1.attachInterrupt(timerIsr);
 }
 
 void loop() {
@@ -269,5 +338,7 @@ void loop() {
   
   //Empujar los datos a Dweet
   sendDweet(presion, temperatura, ruido, luminosidadCompleta);
-  
+  delay(MUESTREO);
+  timerIsr();
+  delay(MUESTREO);
 }
