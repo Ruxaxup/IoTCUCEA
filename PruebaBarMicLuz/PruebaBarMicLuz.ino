@@ -3,7 +3,13 @@
 #include <Adafruit_MPL115A2.h> //Barometro
 #include <Ethernet.h>
 #define DEBUG 0
-
+#define LUZ 		0x01	//0000	0001
+#define PRESION 	0x02	//0000	0010
+#define TEMPERATURA     0x04	//0000	0100
+#define RUIDO 		0x08	//0000	1000
+#define ETHERNET 	0x10	//0001  0000
+#define SERVER	 	0x20	//0010  0000
+byte errorFlag = 0x0;
 
 Adafruit_MPL115A2 barometro; //Barometro
 TSL2561 luminosidad(TSL2561_ADDR_FLOAT); //Luminosidad
@@ -25,6 +31,10 @@ byte actualMac[6];
 EthernetClient client;
 char server[] = "www.dweet.io"; 
 /********************/
+
+boolean hasError(byte flag){
+  return (errorFlag&flag) == flag;
+}
 
 void copyArray(byte* array_original, byte* arrayTo, int n){
   int i = 0;
@@ -65,8 +75,11 @@ void sendDweet(float presion, float temperatura, double ruido,
                uint32_t lumens)
 {
   ruido = 20 * log10(ruido / 5);
-    if(DEBUG == 1) Serial.println("Dweeting...");
+  if(DEBUG == 1) Serial.println("Dweeting...");
   if(client.connect(server,80)){
+    if(hasError(SERVER)){
+      errorFlag = errorFlag ^ SERVER;
+    }
     //Estructura de los datos
     client.print("GET /dweet/for/");
     client.print(thingName);
@@ -94,6 +107,7 @@ void sendDweet(float presion, float temperatura, double ruido,
     client.stop();
       if(DEBUG == 1) Serial.println("Dweet sent");
     }else{
+        errorFlag = errorFlag | SERVER;
         if(DEBUG == 1) Serial.println("Connection to Dweet failed");
     }
 }
@@ -170,8 +184,13 @@ void setup() {
   //Ethernet initialization
   if(!initializeEthernet()){
     //No hacemos nada
+    errorFlag = errorFlag | ETHERNET;
     while(true){
-        digitalWrite(ledError, HIGH);
+        delay(5000);
+        if(initializeEthernet()){
+          errorFlag = errorFlag ^ ETHERNET;
+          break;
+        }
     }
   }  
   // put your setup code here, to run once:
@@ -200,11 +219,21 @@ void loop() {
   presion = getPressure();
   if(presion == 0){
     //error de lectura Presion
+    errorFlag = errorFlag | PRESION;
+  }else{
+    if(hasError(PRESION)){
+      errorFlag = errorFlag ^ PRESION;
+    }
   }
   temperatura = getTemperature();
   if(temperatura == 0){
     //error de lectura temperatura
-  }  
+    errorFlag = errorFlag | TEMPERATURA;
+  }else{
+    if(hasError(TEMPERATURA)){
+      errorFlag = errorFlag ^ TEMPERATURA;
+    }
+  }
   if(DEBUG == 1) printToSerialTempPress(temperatura, presion);   
   delay(1000);
   digitalWrite(ledBar, LOW);
@@ -214,6 +243,11 @@ void loop() {
   luminosidadCompleta = getLuminosity();
   if(luminosidadCompleta == -1){
     //error de lectura Luz
+    errorFlag = errorFlag | LUZ;
+  }else{
+    if(hasError(LUZ)){
+      errorFlag = errorFlag ^ RUIDO;
+    }
   }
   if(DEBUG == 1) printToSerialLum(luminosidadCompleta);
   delay(1000);
@@ -223,6 +257,11 @@ void loop() {
   ruido = getNoise();
   if(ruido == 0){
     //error de lectura Ruido
+    errorFlag = errorFlag | RUIDO;
+  }else{
+    if(hasError(RUIDO)){
+      errorFlag = errorFlag ^ RUIDO;
+    }
   }
   if(DEBUG == 1) printToSerialNoise(ruido);
   delay(1000);
