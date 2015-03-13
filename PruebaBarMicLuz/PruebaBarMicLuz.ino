@@ -61,10 +61,12 @@ boolean initializeEthernet(){
     break;
   }
   //habilitamos el puerto ethernet de galileo
-    if(DEBUG == 1) Serial.print("Setting up ethernet port");
+  if(DEBUG == 1) Serial.print("Setting up ethernet port");
+  digitalWrite(ledError,HIGH);
   system("ifup eth0");
-  delay(2000); 
-    if(DEBUG == 1) Serial.print("done");
+  delay(4000); 
+  digitalWrite(ledError,LOW);
+  if(DEBUG == 1) Serial.print("done");
   
   //Start Ethernet connection
   if(Ethernet.begin(mac) == 0){
@@ -79,7 +81,7 @@ boolean initializeEthernet(){
 void sendDweet(float presion, float temperatura, double ruido,
                uint32_t lumens)
 {
-  ruido = 20 * log10(ruido / 5);
+  //ruido = 20 * log10(ruido / 5);
   if(DEBUG == 1) Serial.println("Dweeting...");
   if(client.connect(server,80)){
     if(hasError(SERVER)){
